@@ -574,8 +574,7 @@ Status ExchangeSinkOperator::push_chunk(RuntimeState* state, const ChunkPtr& chu
                     DCHECK_LT(opt_column_id, _partitions_columns.size());
 
                     VLOG(2) << "enable partition shuffle optimization, opt partition column id:" << opt_column_id;
-                    int32_t shuffle_optimization_column_bit_size =
-                            _runtime_state->shuffle_optimization_column_bit_size();
+                    int32_t shuffle_optimization_column_bit_size = state->shuffle_optimization_column_bit_size();
                     int32_t non_shuffle_optimization_column_bit_size = 32 - shuffle_optimization_column_bit_size;
                     if (shuffle_optimization_column_bit_size == 32) {
                         _partitions_columns[opt_column_id]->fnv_hash(&_hash_values[0], 0, num_rows);

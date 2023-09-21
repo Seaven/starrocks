@@ -224,6 +224,7 @@ struct TQueryOptions {
   105: optional bool use_column_pool = true;
 
   106: optional i32 shuffle_optimization_column_bit_size = 27;
+  205: optional bool use_range_join;
 }
 
 

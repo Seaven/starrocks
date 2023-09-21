@@ -416,7 +416,8 @@ public:
                        ? _query_options.shuffle_optimization_column_bit_size
                        : 27;
     }
-
+    
+    bool enable_range_join() const { return _query_options.__isset.use_range_join && _query_options.use_range_join; }
 private:
     // Set per-query state.
     void _init(const TUniqueId& fragment_instance_id, const TQueryOptions& query_options,
