@@ -411,6 +411,12 @@ public:
                _query_options.enable_collect_table_level_scan_stats;
     }
 
+    int32_t shuffle_optimization_column_bit_size() const {
+        return _query_options.__isset.shuffle_optimization_column_bit_size
+                       ? _query_options.shuffle_optimization_column_bit_size
+                       : 27;
+    }
+
 private:
     // Set per-query state.
     void _init(const TUniqueId& fragment_instance_id, const TQueryOptions& query_options,

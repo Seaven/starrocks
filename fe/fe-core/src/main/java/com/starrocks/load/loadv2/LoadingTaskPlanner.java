@@ -312,7 +312,7 @@ public class LoadingTaskPlanner {
             partitionExprs.add(new SlotRef(tupleDesc.getColumnSlot(column.getName())));
         });
 
-        DataPartition dataPartition = new DataPartition(TPartitionType.HASH_PARTITIONED, partitionExprs); 
+        DataPartition dataPartition = new DataPartition(TPartitionType.HASH_PARTITIONED, partitionExprs);
         ExchangeNode exchangeNode = new ExchangeNode(new PlanNodeId(nextNodeId++), scanFragment.getPlanRoot(),
                 dataPartition);
         PlanFragment sinkFragment = new PlanFragment(new PlanFragmentId(1), exchangeNode, dataPartition);

@@ -37,6 +37,7 @@ import com.starrocks.sql.optimizer.operator.logical.LogicalJoinOperator;
 import com.starrocks.sql.optimizer.operator.logical.LogicalOlapScanOperator;
 import com.starrocks.sql.optimizer.operator.logical.LogicalScanOperator;
 import com.starrocks.sql.optimizer.operator.physical.PhysicalOlapScanOperator;
+import com.starrocks.sql.optimizer.operator.physical.PhysicalScanOperator;
 import com.starrocks.sql.optimizer.operator.scalar.BinaryPredicateOperator;
 import com.starrocks.sql.optimizer.operator.scalar.CastOperator;
 import com.starrocks.sql.optimizer.operator.scalar.ColumnRefOperator;
@@ -164,6 +165,10 @@ public class Utils {
 
     public static void extractOlapScanOperator(GroupExpression groupExpression, List<LogicalOlapScanOperator> list) {
         extractOperator(groupExpression, list, p -> OperatorType.LOGICAL_OLAP_SCAN.equals(p.getOpType()));
+    }
+
+    public static void extractScanOperator(OptExpression expression, List<PhysicalScanOperator> list) {
+        extractOperator(expression, list, p -> p instanceof PhysicalScanOperator);
     }
 
     public static List<PhysicalOlapScanOperator> extractPhysicalOlapScanOperator(OptExpression root) {

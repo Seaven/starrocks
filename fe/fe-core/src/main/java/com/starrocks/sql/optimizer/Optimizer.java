@@ -63,6 +63,7 @@ import com.starrocks.sql.optimizer.rule.tree.AddDecodeNodeForDictStringRule;
 import com.starrocks.sql.optimizer.rule.tree.CloneDuplicateColRefRule;
 import com.starrocks.sql.optimizer.rule.tree.ExchangeSortToMergeRule;
 import com.starrocks.sql.optimizer.rule.tree.ExtractAggregateColumn;
+import com.starrocks.sql.optimizer.rule.tree.PartitionShuffleColumnRule;
 import com.starrocks.sql.optimizer.rule.tree.PreAggregateTurnOnRule;
 import com.starrocks.sql.optimizer.rule.tree.PredicateReorderRule;
 import com.starrocks.sql.optimizer.rule.tree.PruneAggregateNodeRule;
@@ -423,6 +424,7 @@ public class Optimizer {
         ruleRewriteOnlyOnce(tree, rootTaskContext, new GroupByCountDistinctRewriteRule());
 
         ruleRewriteOnlyOnce(tree, rootTaskContext, new DeriveRangeJoinPredicateRule());
+        ruleRewriteOnlyOnce(tree, rootTaskContext, SplitScanORToUnionRule.getInstance());
         return tree.getInputs().get(0);
     }
 
@@ -614,6 +616,7 @@ public class Optimizer {
         result = new PruneShuffleColumnRule().rewrite(result, rootTaskContext);
         result = new UseSortAggregateRule().rewrite(result, rootTaskContext);
         result = new AddDecodeNodeForDictStringRule().rewrite(result, rootTaskContext);
+
         // This rule should be last
         result = new ScalarOperatorsReuseRule().rewrite(result, rootTaskContext);
         // Reorder predicates
@@ -621,6 +624,8 @@ public class Optimizer {
                 rootTaskContext);
         result = new ExtractAggregateColumn().rewrite(result, rootTaskContext);
         result = new PruneSubfieldsForComplexType().rewrite(result, rootTaskContext);
+
+        result = new PartitionShuffleColumnRule().rewrite(result, rootTaskContext);
 
         SessionVariable sessionVariable = rootTaskContext.getOptimizerContext().getSessionVariable();
         if (sessionVariable.isEnableCboTablePrune() || sessionVariable.isEnableRboTablePrune()) {

@@ -304,6 +304,13 @@ public class SessionVariable implements Serializable, Writable, Cloneable {
 
     public static final String CBO_DERIVE_RANGE_JOIN_PREDICATE = "cbo_derive_range_join_predicate";
 
+    public static final String ENABLE_PARTITION_COLUMN_SHUFFLE_OPTIMIZATION
+            = "enable_partition_column_shuffle_optimization";
+    public static final String SHUFFLE_OPTIMIZATION_COLUMN_HINTS
+            = "shuffle_optimization_column_hints";
+    public static final String SHUFFLE_OPTIMIZATION_COLUMN_BIT_SIZE
+            = "shuffle_optimization_column_bit_size";
+
     // --------  New planner session variables end --------
 
     // Type of compression of transmitted data
@@ -447,6 +454,7 @@ public class SessionVariable implements Serializable, Writable, Cloneable {
 
     public static final String ENABLE_PRUNE_COMPLEX_TYPES = "enable_prune_complex_types";
     public static final String RANGE_PRUNER_PREDICATES_MAX_LEN = "range_pruner_max_predicate";
+
 
     public static final String GROUP_CONCAT_MAX_LEN = "group_concat_max_len";
 
@@ -1299,12 +1307,45 @@ public class SessionVariable implements Serializable, Writable, Cloneable {
     @VarAttr(name = CBO_DERIVE_RANGE_JOIN_PREDICATE)
     private boolean cboDeriveRangeJoinPredicate = false;
 
+    @VarAttr(name = ENABLE_PARTITION_COLUMN_SHUFFLE_OPTIMIZATION)
+    private boolean enablePartitionColumnShuffleOptimization = false;
+
+    @VarAttr(name = SHUFFLE_OPTIMIZATION_COLUMN_HINTS)
+    private String shufflePartitionColumnHints = "";
+
+    @VarAttr(name = SHUFFLE_OPTIMIZATION_COLUMN_BIT_SIZE)
+    private int shufflePartitionColumnBitSize = 27;
+
     public boolean enableCboDeriveRangeJoinPredicate() {
         return cboDeriveRangeJoinPredicate;
     }
 
     public void setCboDeriveRangeJoinPredicate(boolean cboDeriveRangeJoinPredicate) {
         this.cboDeriveRangeJoinPredicate = cboDeriveRangeJoinPredicate;
+    }
+
+    public boolean isEnablePartitionColumnShuffleOptimization() {
+        return enablePartitionColumnShuffleOptimization;
+    }
+
+    public void setEnablePartitionColumnShuffleOptimization(boolean enablePartitionColumnShuffleOptimization) {
+        this.enablePartitionColumnShuffleOptimization = enablePartitionColumnShuffleOptimization;
+    }
+
+    public String getShufflePartitionColumnHints() {
+        return shufflePartitionColumnHints;
+    }
+
+    public void setShufflePartitionColumnHints(String shufflePartitionColumnHints) {
+        this.shufflePartitionColumnHints = shufflePartitionColumnHints;
+    }
+
+    public int getShufflePartitionColumnBitSize() {
+        return shufflePartitionColumnBitSize;
+    }
+
+    public void setShufflePartitionColumnBitSize(int shufflePartitionColumnBitSize) {
+        this.shufflePartitionColumnBitSize = shufflePartitionColumnBitSize;
     }
 
     public int getExprChildrenLimit() {
@@ -2608,6 +2649,7 @@ public class SessionVariable implements Serializable, Writable, Cloneable {
         tResult.setConnector_scan_use_query_mem_ratio(connectorScanUseQueryMemRatio);
         tResult.setScan_use_query_mem_ratio(scanUseQueryMemRatio);
         tResult.setEnable_collect_table_level_scan_stats(enableCollectTableLevelScanStats);
+        tResult.setShuffle_optimization_column_bit_size(shufflePartitionColumnBitSize);
         return tResult;
     }
 
