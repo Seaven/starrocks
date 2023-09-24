@@ -73,6 +73,8 @@ public:
         // new one stub and insert into map
         brpc::ChannelOptions options;
         options.connect_timeout_ms = 3000;
+        options.connection_type = "pooled";
+
         // Explicitly set the max_retry
         // TODO(meegoo): The retry strategy can be customized in the future
         options.max_retry = 3;
