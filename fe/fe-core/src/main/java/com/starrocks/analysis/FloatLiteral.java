@@ -127,7 +127,11 @@ public class FloatLiteral extends LiteralExpr {
         // Figure out if this will fit in a FLOAT without loosing precision.
         float fvalue;
         fvalue = value.floatValue();
-        type = Float.toString(fvalue).equals(Double.toString(value)) ? Type.FLOAT : Type.DOUBLE;
+        if (fvalue == this.value) {
+            type = Type.FLOAT;
+        } else {
+            type = Type.DOUBLE;
+        }
     }
 
     private void checkValue(Double value) throws AnalysisException {
