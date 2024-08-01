@@ -3250,18 +3250,9 @@ When this value is set to less than `0`, the system uses the product of its abso
 - Description: The proportion of columns with the same name for Flat JSON. Extraction is not performed if the proportion of columns with the same name is lower than this value. This parameter takes effect only when `enable_json_flat` is set to `true`.
 - Introduced in: v3.3.0
 
-##### json_flat_internal_column_min_limit
-
-- Default: 5
-- Type: Int
-- Unit:
-- Is mutable: Yes
-- Description: The minimum number of JSON fields for performing Flat JSON. Flat JSON is not performed if the number of JSON fields is less than this value. This parameter takes effect only when `enable_json_flat` is set to `true`.
-- Introduced in: v3.3.0
-
 ##### json_flat_column_max
 
-- Default: 20
+- Default: 100
 - Type: Int
 - Unit:
 - Is mutable: Yes
@@ -4611,7 +4602,7 @@ When this value is set to less than `0`, the system uses the product of its abso
 <!--
 ##### json_flat_column_max
 
-- Default: 20
+- Default: 100
 - Type: Int
 - Unit:
 - Is mutable: Yes

@@ -3193,18 +3193,9 @@ curl http://<BE_IP>:<BE_HTTP_PORT>/varz
 - 描述：控制 Flat JSON 时，同名列的占比阈值，当同名列占比低于该值时不进行提取，默认为 0.9。该参数仅在 `enable_json_flat` 为 `true` 时生效。
 - 引入版本：v3.3.0
 
-##### json_flat_internal_column_min_limit
-
-- 默认值：5
-- 类型：Int
-- 单位：
-- 是否动态：是
-- 描述：控制 Flat JSON 时，JSON 内部字段数量限制，低于该数量的 JSON 不执行 Flat JSON 优化，默认为 5。该参数仅在 `enable_json_flat` 为 `true` 时生效。
-- 引入版本：v3.3.0
-
 ##### json_flat_column_max
 
-- 默认值：20
+- 默认值：100
 - 类型：Int
 - 单位：
 - 是否动态：是
@@ -4554,7 +4545,7 @@ curl http://<BE_IP>:<BE_HTTP_PORT>/varz
 <!--
 ##### json_flat_column_max
 
-- 默认值：20
+- 默认值：100
 - 类型：Int
 - 单位：
 - 是否动态：是
