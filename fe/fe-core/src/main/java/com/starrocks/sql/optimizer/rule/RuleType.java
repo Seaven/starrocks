@@ -199,6 +199,8 @@ public enum RuleType {
 
     TF_CTE_ADD_PROJECTION,
 
+    TF_REUSE_FUSION_RULE,
+
     // The following are implementation rules:
     IMP_OLAP_LSCAN_TO_PSCAN,
     IMP_HIVE_LSCAN_TO_PSCAN,
