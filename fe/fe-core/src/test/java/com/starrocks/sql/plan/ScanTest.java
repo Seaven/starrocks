@@ -549,4 +549,19 @@ public class ScanTest extends PlanTestBase {
                 "     <id 10> : count_v3\n" +
                 "     <id 11> : rows_v1");
     }
+
+    @Test
+    public void testMetaAggregateSumLength() throws Exception {
+        String sql = "select max(t1a), min(t1a), count(t1a), count(*), sum(char_length(t1a)) " +
+                "from test_all_type [_META_];";
+        String plan = getFragmentPlan(sql);
+        assertContains(plan, "  0:MetaScan\n" +
+                "     Table: test_all_type\n" +
+                "     <id 17> : max_t1a\n" +
+                "     <id 18> : min_t1a\n" +
+                "     <id 19> : count_t1a\n" +
+                "     <id 20> : rows_t1a\n" +
+                "     <id 21> : length_t1a");
+        assertContains(plan, "sum(length_t1a)");
+    }
 }

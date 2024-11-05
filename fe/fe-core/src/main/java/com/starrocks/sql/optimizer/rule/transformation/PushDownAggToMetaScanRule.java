@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 package com.starrocks.sql.optimizer.rule.transformation;
 
 import com.google.common.base.Preconditions;
@@ -55,21 +54,13 @@ public class PushDownAggToMetaScanRule extends TransformationRule {
     public boolean check(OptExpression input, OptimizerContext context) {
         LogicalAggregationOperator agg = (LogicalAggregationOperator) input.getOp();
         LogicalProjectOperator projectOperator = (LogicalProjectOperator) input.inputAt(0).getOp();
+
         if (CollectionUtils.isNotEmpty(agg.getGroupingKeys())) {
             return false;
         }
-        for (Map.Entry<ColumnRefOperator, ScalarOperator> entry : projectOperator.getColumnRefMap().entrySet()) {
-            if (!entry.getKey().equals(entry.getValue())) {
-                return false;
-            }
-        }
 
         for (CallOperator aggCall : agg.getAggregations().values()) {
-            String aggFuncName = aggCall.getFnName();
-            if (!aggFuncName.equalsIgnoreCase(FunctionSet.DICT_MERGE)
-                    && !aggFuncName.equalsIgnoreCase(FunctionSet.MAX)
-                    && !aggFuncName.equalsIgnoreCase(FunctionSet.MIN)
-                    && !aggFuncName.equalsIgnoreCase(FunctionSet.COUNT)) {
+            if (!checkAggFunc(aggCall, projectOperator) && !isSumLength(aggCall, projectOperator)) {
                 return false;
             }
         }
@@ -78,10 +69,51 @@ public class PushDownAggToMetaScanRule extends TransformationRule {
         return metaScan.getAggColumnIdToNames().isEmpty();
     }
 
+    public boolean checkAggFunc(CallOperator aggregateCall, LogicalProjectOperator project) {
+        String aggFuncName = aggregateCall.getFnName();
+        if (!aggFuncName.equalsIgnoreCase(FunctionSet.DICT_MERGE)
+                && !aggFuncName.equalsIgnoreCase(FunctionSet.MAX)
+                && !aggFuncName.equalsIgnoreCase(FunctionSet.MIN)
+                && !aggFuncName.equalsIgnoreCase(FunctionSet.COUNT)) {
+            return false;
+        }
+
+        if (aggFuncName.equalsIgnoreCase(FunctionSet.COUNT) && aggregateCall.getChildren().isEmpty()) {
+            return true;
+        }
+
+        ScalarOperator input = aggregateCall.getChildren().get(0);
+        return input instanceof ColumnRefOperator && project.getColumnRefMap().containsKey(input) &&
+                input.equals(project.getColumnRefMap().get(input));
+    }
+
+    public boolean isSumLength(CallOperator aggregateCall, LogicalProjectOperator project) {
+        if (!aggregateCall.getFnName().equalsIgnoreCase(FunctionSet.SUM)) {
+            return false;
+        }
+        ScalarOperator columnRef = aggregateCall.getChildren().get(0);
+        if (!(columnRef instanceof ColumnRefOperator)) {
+            return false;
+        }
+        if (!project.getColumnRefMap().containsKey(columnRef)) {
+            return false;
+        }
+
+        ScalarOperator scalarOperator = project.getColumnRefMap().get(columnRef);
+        return scalarOperator instanceof CallOperator &&
+                FunctionSet.CHAR_LENGTH.equalsIgnoreCase(((CallOperator) scalarOperator).getFnName());
+    }
+
+    public ColumnRefOperator getSumLengthColumn(CallOperator aggregateCall, LogicalProjectOperator project) {
+        ColumnRefOperator columnRef = (ColumnRefOperator) aggregateCall.getChildren().get(0);
+        return (ColumnRefOperator) project.getColumnRefMap().get(columnRef).getChild(0);
+    }
+
     @Override
     public List<OptExpression> transform(OptExpression input, OptimizerContext context) {
-        LogicalAggregationOperator agg = (LogicalAggregationOperator) input.getOp();
-        LogicalMetaScanOperator metaScan = (LogicalMetaScanOperator) input.inputAt(0).inputAt(0).getOp();
+        LogicalAggregationOperator agg = input.getOp().cast();
+        LogicalProjectOperator project = input.inputAt(0).getOp().cast();
+        LogicalMetaScanOperator metaScan = input.inputAt(0).inputAt(0).getOp().cast();
         ColumnRefFactory columnRefFactory = context.getColumnRefFactory();
 
         Preconditions.checkState(agg.getGroupingKeys().isEmpty());
@@ -100,6 +132,9 @@ public class PushDownAggToMetaScanRule extends TransformationRule {
             if (aggCall.getFnName().equals(FunctionSet.COUNT) && aggCall.getChildren().isEmpty()) {
                 usedColumn = metaScan.getOutputColumns().get(0);
                 metaColumnName = "rows_" + usedColumn.getName();
+            } else if (FunctionSet.SUM.equals(aggCall.getFnName())) {
+                usedColumn = getSumLengthColumn(aggCall, project);
+                metaColumnName = "length_" + usedColumn.getName();
             } else {
                 ColumnRefSet usedColumns = aggCall.getUsedColumns();
                 Preconditions.checkArgument(usedColumns.cardinality() == 1);
@@ -119,7 +154,7 @@ public class PushDownAggToMetaScanRule extends TransformationRule {
 
             Column c = metaScan.getColRefToColumnMetaMap().get(usedColumn);
             Column copiedColumn = c.deepCopy();
-            if (aggCall.getFnName().equals(FunctionSet.COUNT)) {
+            if (FunctionSet.COUNT.equals(aggCall.getFnName()) || FunctionSet.SUM.equals(aggCall.getFnName())) {
                 // this variable is introduced to solve compatibility issues,
                 // see more details in the description of https://github.com/StarRocks/starrocks/pull/17619
                 copiedColumn.setType(Type.BIGINT);
@@ -135,7 +170,7 @@ public class PushDownAggToMetaScanRule extends TransformationRule {
 
                 newAggCalls.put(kv.getKey(),
                         new CallOperator(aggCall.getFnName(), aggCall.getType(), List.of(metaColumn), aggFunction));
-            } else if (aggCall.getFnName().equals(FunctionSet.COUNT)) {
+            } else if (FunctionSet.COUNT.equals(aggCall.getFnName()) || FunctionSet.SUM.equals(aggCall.getFnName())) {
                 // rewrite count to sum
                 Function aggFunction = Expr.getBuiltinFunction(FunctionSet.SUM, new Type[] {Type.BIGINT},
                         Function.CompareMode.IS_IDENTICAL);
