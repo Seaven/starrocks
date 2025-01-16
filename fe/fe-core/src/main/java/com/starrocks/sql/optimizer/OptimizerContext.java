@@ -95,38 +95,6 @@ public class OptimizerContext {
         this.optimizerConfig = OptimizerConfig.defaultConfig();
     }
 
-    //    @VisibleForTesting
-    //    public OptimizerContext(ColumnRefFactory columnRefFactory) {
-    //        this.ruleSet = new RuleSet();
-    //        this.taskScheduler = TaskScheduler.create();
-    //        this.columnRefFactory = columnRefFactory;
-    //        this.optimizerConfig = new OptimizerConfig();
-    //        this.allLogicalOlapScanOperators = Collections.emptyList();
-    //
-    //        this.connectContext = new ConnectContext();
-    //        this.connectContext.setQueryId(UUID.randomUUID());
-    //    }
-
-    //    @VisibleForTesting
-    //    public OptimizerContext(Memo memo, ColumnRefFactory columnRefFactory, ConnectContext connectContext) {
-    //        this(memo, columnRefFactory, connectContext, OptimizerConfig.defaultConfig());
-    //    }
-
-    //    public OptimizerContext(Memo memo, ColumnRefFactory columnRefFactory, ConnectContext connectContext,
-    //                            OptimizerConfig optimizerConfig) {
-    //        this.connectContext = connectContext;
-    //        this.memo = memo;
-    //        this.ruleSet = new RuleSet();
-    //        this.taskScheduler = TaskScheduler.create();
-    //        this.columnRefFactory = columnRefFactory;
-    //        this.cteContext = new CTEContext();
-    //        cteContext.reset();
-    //        this.cteContext.setEnableCTE(getSessionVariable().isCboCteReuse());
-    //        this.cteContext.setInlineCTERatio(getSessionVariable().getCboCTERuseRatio());
-    //        this.cteContext.setMaxCTELimit(getSessionVariable().getCboCTEMaxLimit());
-    //        this.optimizerConfig = optimizerConfig;
-    //    }
-
     // ============================ Query ============================
     public StatementBase getStatement() {
         return statement;
