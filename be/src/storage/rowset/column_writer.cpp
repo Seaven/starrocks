@@ -34,6 +34,7 @@
 
 #include "storage/rowset/column_writer.h"
 
+#include <cmath>
 #include <cstddef>
 #include <memory>
 
@@ -375,6 +376,9 @@ Status ScalarColumnWriter::init() {
     RETURN_IF_ERROR(
             get_block_compression_codec(_opts.meta->compression(), &_compress_codec, _opts.meta->compression_level()));
 
+    LOG(INFO) << "hk_debug: column writer init, name=" << _opts.meta->name() << ", zone_map: " << _opts.need_zone_map
+              << ", bitmap_index: " << _opts.need_bitmap_index << ", bloom_filter: " << _opts.need_bloom_filter
+              << ", inverted_index: " << _opts.need_inverted_index << ", vector_index: " << _opts.need_vector_index;
     if (!_opts.need_speculate_encoding) {
         auto st = set_encoding(_opts.meta->encoding());
         CHECK(st.ok()) << st;
@@ -581,8 +585,15 @@ Status ScalarColumnWriter::_write_data_page(Page* page) {
     for (auto& data : page->data) {
         compressed_body.push_back(data.slice());
     }
+    LOG(INFO) << "hk_debug, scalar-before type[" << type_to_string_v2(_type_info->type()) << "], wfile_size["
+              << _wfile->size() << "]";
     RETURN_IF_ERROR(PageIO::write_page(_wfile, compressed_body, page->footer, &pp));
+    LOG(INFO) << "hk_debug, scalar-after  type[" << type_to_string_v2(_type_info->type()) << "], wfile_size["
+              << _wfile->size() << "]";
+
     _ordinal_index_builder->append_entry(page->footer.data_page_footer().first_ordinal(), pp);
+    LOG(INFO) << "hk_debug, original-after  type[" << type_to_string_v2(_type_info->type()) << "], wfile_size["
+              << _wfile->size() << "]";
     return Status::OK();
 }
 
@@ -599,12 +610,16 @@ Status ScalarColumnWriter::finish_current_page() {
     std::vector<Slice> body;
     faststring* encoded_values = _page_builder->finish();
     body.emplace_back(*encoded_values);
+    LOG(INFO) << "hk_debug, push body values type[" << type_to_string_v2(_type_info->type()) << "], push["
+              << encoded_values->size() << "], body[" << body.size() << "]";
 
     OwnedSlice nullmap;
     if (is_nullable() && _curr_page_format == 1) {
         if (_null_map_builder_v1->has_null()) {
             nullmap = _null_map_builder_v1->finish();
             body.push_back(nullmap.slice());
+            LOG(INFO) << "hk_debug, push body null type[" << type_to_string_v2(_type_info->type()) << "], body["
+                      << body.size() << "]";
         }
     } else if (is_nullable() && (_curr_page_format == 2)) {
         DCHECK_EQ(_page_builder->count(), _null_map_builder_v2->size());
@@ -615,6 +630,8 @@ Status ScalarColumnWriter::finish_current_page() {
                 return Status::Corruption("encode null flags failed");
             }
             body.push_back(nullmap.slice());
+            LOG(INFO) << "hk_debug, push body null type[" << type_to_string_v2(_type_info->type()) << "], body["
+                      << body.size() << "]";
         }
     }
 
@@ -634,8 +651,16 @@ Status ScalarColumnWriter::finish_current_page() {
     }
     // trying to compress page body
     faststring compressed_body;
+    LOG(INFO) << "hk_debug, compress-before compress type[" << type_to_string_v2(_type_info->type())
+              << "], uncompress_size[" << page->footer.uncompressed_size() << "]"
+              << ", compress_codec[" << _compress_codec->type() << "]";
     RETURN_IF_ERROR(
             PageIO::compress_page_body(_compress_codec, _opts.compression_min_space_saving, body, &compressed_body));
+
+    LOG(INFO) << "hk_debug, compress-after compress type[" << type_to_string_v2(_type_info->type())
+              << "], uncompress_size[" << page->footer.uncompressed_size() << "]"
+              << ", compress_codec[" << _compress_codec->type() << "]"
+              << ", compress_size[" << compressed_body.size() << "]";
     if (compressed_body.size() == 0) {
         // page body is uncompressed
         double space_saving =
@@ -736,7 +761,11 @@ Status ScalarColumnWriter::append(const uint8_t* data, const uint8_t* null_flags
         bool has_null_in_page = false;
         size_t num_written = 0;
         if (_curr_page_format == 2) {
+            LOG(INFO) << "hk_debug, add data before type[" << type_to_string_v2(_type_info->type()) << ", name["
+                      << _opts.meta->name() << "], page size: " << _page_builder->size();
             num_written = _page_builder->add(data, remaining);
+            LOG(INFO) << "hk_debug, add data after  type[" << type_to_string_v2(_type_info->type()) << ", name["
+                      << _opts.meta->name() << "], page size: " << _page_builder->size();
             page_full = num_written < remaining;
             if (_null_map_builder_v2 != nullptr) {
                 _null_map_builder_v2->add_null_flags(null_flags, num_written);
@@ -747,7 +776,12 @@ Status ScalarColumnWriter::append(const uint8_t* data, const uint8_t* null_flags
                 _null_map_builder_v2->set_has_null(has_null_in_page);
             }
         } else if (!has_null) {
+            LOG(INFO) << "hk_debug, add data before type[" << type_to_string_v2(_type_info->type()) << ", name["
+                      << _opts.meta->name() << "], page size: " << _page_builder->size();
             num_written = _page_builder->add(data, remaining);
+            LOG(INFO) << "hk_debug, add data after type[" << type_to_string_v2(_type_info->type()) << ", name["
+                      << _opts.meta->name() << "], page size: " << _page_builder->size();
+
             page_full = num_written < remaining;
             if (_null_map_builder_v1 != nullptr) {
                 _null_map_builder_v1->add_run(false, num_written);
@@ -759,7 +793,11 @@ Status ScalarColumnWriter::append(const uint8_t* data, const uint8_t* null_flags
                 auto [run, is_null] = pair;
                 size_t num_add = run;
                 if (!is_null) {
+                    LOG(INFO) << "hk_debug, add data before type[" << type_to_string_v2(_type_info->type()) << ", name["
+                              << _opts.meta->name() << "], page size: " << _page_builder->size();
                     num_add = _page_builder->add(ptr, run);
+                    LOG(INFO) << "hk_debug, add data after type[" << type_to_string_v2(_type_info->type()) << ", name["
+                              << _opts.meta->name() << "], page size: " << _page_builder->size();
                     _null_map_builder_v1->add_run(false, run);
                 } else {
                     _null_map_builder_v1->add_run(true, run);
@@ -788,12 +826,17 @@ Status ScalarColumnWriter::append(const uint8_t* data, const uint8_t* null_flags
                     INDEX_ADD_VALUES(_inverted_index_builder, pdata, run);
                 }
                 pdata += type_info()->size() * run;
+
+                LOG(INFO) << "hk_debug, add data2 after type[" << type_to_string_v2(_type_info->type()) << ", name["
+                          << _opts.meta->name() << "], page size: " << _page_builder->size();
             }
         } else {
             INDEX_ADD_VALUES(_zone_map_index_builder, data, num_written);
             INDEX_ADD_VALUES(_bitmap_index_builder, data, num_written);
             INDEX_ADD_VALUES(_bloom_filter_index_builder, data, num_written);
             INDEX_ADD_VALUES(_inverted_index_builder, data, num_written);
+            LOG(INFO) << "hk_debug, add data3 after type[" << type_to_string_v2(_type_info->type()) << ", name["
+                      << _opts.meta->name() << "], page size: " << _page_builder->size();
         }
 
         _next_rowid += num_written;

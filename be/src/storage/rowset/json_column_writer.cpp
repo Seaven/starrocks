@@ -168,7 +168,7 @@ Status FlatJsonColumnWriter::_init_flat_writers() {
         } else {
             opts.meta->set_is_nullable(true);
         }
-        opts.meta->set_encoding(DEFAULT_ENCODING);
+        opts.meta->set_encoding(PLAIN_ENCODING);
         opts.meta->set_compression(_json_meta->compression());
 
         if (_flat_types[i] == LogicalType::TYPE_JSON) {

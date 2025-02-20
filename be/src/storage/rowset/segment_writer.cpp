@@ -294,10 +294,22 @@ Status SegmentWriter::finalize_columns(uint64_t* index_size) {
                     strings::Substitute("column index $0 out of range $1", column_index, num_columns));
         }
 
+        const auto& column = _tablet_schema->column(column_index);
         auto& column_writer = _column_writers[i];
+
+        LOG(INFO) << "hk_debug, seg-before index[" << i << "], name[" << column.name() << "], type["
+                  << type_to_string_v2(column_writer->type_info()->type()) << "], wfile_size[" << _wfile->size() << "]";
+
         RETURN_IF_ERROR(column_writer->finish());
         // write data
+        LOG(INFO) << "hk_debug, seg-finish index[" << i << "], name[" << column.name() << "], type["
+                  << type_to_string_v2(column_writer->type_info()->type()) << "], wfile_size[" << _wfile->size() << "]";
+
         RETURN_IF_ERROR(column_writer->write_data());
+
+        LOG(INFO) << "hk_debug, seg-after  index[" << i << "], name[" << column.name() << "], type["
+                  << type_to_string_v2(column_writer->type_info()->type()) << "], wfile_size[" << _wfile->size() << "]";
+
         // write index
         uint64_t index_offset = _wfile->size();
         RETURN_IF_ERROR(column_writer->write_ordinal_index());
@@ -311,7 +323,6 @@ Status SegmentWriter::finalize_columns(uint64_t* index_size) {
         *index_size += _wfile->size() - index_offset + standalone_index_size;
 
         // check global dict valid
-        const auto& column = _tablet_schema->column(column_index);
         if (!column_writer->is_global_dict_valid() && is_string_type(column.type())) {
             std::string col_name(column.name());
             _global_dict_columns_valid_info[col_name] = false;
