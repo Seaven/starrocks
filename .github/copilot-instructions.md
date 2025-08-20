@@ -115,11 +115,6 @@ StarRocks is an open-source, high-performance analytical database system designe
 - Missing error handling or swallowing exceptions
 - Breaking existing API contracts without proper deprecation
 
-## Testing Philosophy
-- **Integration Tests**: Focus on end-to-end SQL functionality
-- **Unit Tests**: Test individual components in isolation
-- **Performance Tests**: Benchmark critical path operations
-- **Compatibility Tests**: Ensure backward compatibility with existing data
 
 ## Documentation Requirements
 - Update relevant documentation for user-facing changes
