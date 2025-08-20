@@ -76,20 +76,6 @@ StarRocks is an open-source, high-performance analytical database system designe
 - `[Doc]` - Documentation updates
 - `[Tool]` - Build system and tooling changes
 
-### Commit Message Format
-```
-[Category] Brief description (50 chars or less)
-
-Detailed explanation of what this commit does and why.
-Wrap lines at 72 characters.
-
-- Key change 1
-- Key change 2
-- Key change 3
-
-Fixes: #issue_number (if applicable)
-Closes: #issue_number (if applicable)
-```
 
 ## Review Focus Areas
 
