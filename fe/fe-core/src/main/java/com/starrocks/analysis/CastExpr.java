@@ -117,6 +117,10 @@ public class CastExpr extends Expr {
         return "castTo" + targetType.getPrimitiveType().toString();
     }
 
+    public boolean isNoOp() {
+        return noOp;
+    }
+
     @Override
     public Expr clone() {
         return new CastExpr(this);
@@ -131,14 +135,14 @@ public class CastExpr extends Expr {
         }
     }
 
-    @Override
-    protected String explainImpl() {
-        if (noOp) {
-            return getChild(0).explain();
-        } else {
-            return "cast(" + getChild(0).explain() + " as " + type.toString() + ")";
-        }
-    }
+    //    @Override
+    //    protected String explainImpl() {
+    //        if (noOp) {
+    //            return getChild(0).explain();
+    //        } else {
+    //            return "cast(" + getChild(0).explain() + " as " + type.toString() + ")";
+    //        }
+    //    }
 
     @Override
     protected void toThrift(TExprNode msg) {

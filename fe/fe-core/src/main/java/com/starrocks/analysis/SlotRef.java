@@ -268,6 +268,14 @@ public class SlotRef extends Expr {
         return desc;
     }
 
+    public TableName getTblName() {
+        return tblName;
+    }
+
+    public String getColName() {
+        return colName;
+    }
+
     @Override
     public String debugString() {
         MoreObjects.ToStringHelper helper = MoreObjects.toStringHelper(this);
@@ -306,18 +314,18 @@ public class SlotRef extends Expr {
         return tblName != null && !isFromLambda();
     }
 
-    @Override
-    public String explainImpl() {
-        if (label != null) {
-            return "[" + label + "," +
-                    " " + desc.getType() + "," +
-                    " " + desc.getIsNullable() + "]";
-        } else {
-            return "[" + desc.getId().asInt() + "," +
-                    " " + desc.getType() + "," +
-                    " " + desc.getIsNullable() + "]";
-        }
-    }
+//    @Override
+//    public String explainImpl() {
+//        if (label != null) {
+//            return "[" + label + "," +
+//                    " " + desc.getType() + "," +
+//                    " " + desc.getIsNullable() + "]";
+//        } else {
+//            return "[" + desc.getId().asInt() + "," +
+//                    " " + desc.getType() + "," +
+//                    " " + desc.getIsNullable() + "]";
+//        }
+//    }
 
     @Override
     public String toMySql() {

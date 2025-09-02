@@ -130,16 +130,16 @@ public class FunctionParams implements Writable {
         }
     }
 
-    public String getOrderByStringToExplain() {
-        if (orderByElements != null && !orderByElements.isEmpty()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(" ORDER BY ").append(orderByElements.stream().map(OrderByElement::explain).
-                    collect(Collectors.joining(" ")));
-            return sb.toString();
-        } else {
-            return "";
-        }
-    }
+    //    public String getOrderByStringToExplain() {
+    //        if (orderByElements != null && !orderByElements.isEmpty()) {
+    //            StringBuilder sb = new StringBuilder();
+    //            sb.append(" ORDER BY ").append(orderByElements.stream().map(OrderByElement::explain).
+    //                    collect(Collectors.joining(" ")));
+    //            return sb.toString();
+    //        } else {
+    //            return "";
+    //        }
+    //    }
     public boolean isStar() {
         return isStar;
     }
