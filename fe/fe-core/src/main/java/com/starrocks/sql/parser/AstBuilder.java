@@ -5834,6 +5834,7 @@ public class AstBuilder extends com.starrocks.sql.parser.StarRocksBaseVisitor<Pa
                 getColumnNames(context.columnAliases()),
                 new QueryStatement(queryRelation),
                 false,
+                true,
                 queryRelation.getPos());
     }
 

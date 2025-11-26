@@ -26,16 +26,17 @@ public class CTERelation extends Relation {
     private final String name;
     private final QueryStatement cteQueryStatement;
     private boolean resolvedInFromClause;
+    private final boolean isAnchor;
     private int refs = 0; // consume refs
     private boolean isRecursive;
 
     public CTERelation(int cteMouldId, String name, List<String> columnOutputNames,
-                       QueryStatement cteQueryStatement, boolean isRecursive) {
-        this(cteMouldId, name, columnOutputNames, cteQueryStatement, isRecursive, NodePosition.ZERO);
+                       QueryStatement cteQueryStatement, boolean isRecursive, boolean isAnchor) {
+        this(cteMouldId, name, columnOutputNames, cteQueryStatement, isRecursive, isAnchor, NodePosition.ZERO);
     }
 
-    public CTERelation(int cteMouldId, String name, List<String> columnOutputNames,
-                       QueryStatement cteQueryStatement, boolean isRecursive, NodePosition pos) {
+    public CTERelation(int cteMouldId, String name, List<String> columnOutputNames, QueryStatement cteQueryStatement,
+                       boolean isRecursive, boolean isAnchor, NodePosition pos) {
         super(pos);
         this.cteMouldId = cteMouldId;
         this.name = normalizeName(name);
@@ -43,6 +44,7 @@ public class CTERelation extends Relation {
         this.cteQueryStatement = cteQueryStatement;
         this.refs = 0;
         this.isRecursive = isRecursive;
+        this.isAnchor = isAnchor;
     }
 
     public int getCteMouldId() {
@@ -79,6 +81,10 @@ public class CTERelation extends Relation {
 
     public boolean isRecursive() {
         return isRecursive;
+    }
+
+    public boolean isAnchor() {
+        return isAnchor;
     }
 
     @Override

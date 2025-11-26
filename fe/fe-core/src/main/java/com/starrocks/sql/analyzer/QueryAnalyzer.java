@@ -638,7 +638,7 @@ public class QueryAnalyzer {
                         // cte used in outer query and sub-query can't use same relation-id and field
                         CTERelation newCteRelation = new CTERelation(withRelation.getCteMouldId(), tableName.getTbl(),
                                 withRelation.getColumnOutputNames(), withRelation.getCteQueryStatement(),
-                                withRelation.isRecursive());
+                                withRelation.isRecursive(), false);
                         newCteRelation.setAlias(tableRelation.getAlias());
                         newCteRelation.setResolvedInFromClause(true);
                         newCteRelation.setScope(

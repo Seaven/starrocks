@@ -35,6 +35,9 @@ public class CTEAnchorToNoCTEImplementationRule extends ImplementationRule {
     @Override
     public boolean check(OptExpression input, OptimizerContext context) {
         LogicalCTEAnchorOperator anchor = (LogicalCTEAnchorOperator) input.getOp();
+        if (anchor.isRecursive()) {
+            return false;
+        }
         return !context.getCteContext().isForceCTE(anchor.getCteId());
     }
 

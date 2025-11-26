@@ -214,9 +214,8 @@ public class RelationTransformer implements AstVisitorExtendInterface<LogicalPla
 
     // transform relation without considering the sql_select_limit
     public LogicalPlan transform(Relation relation) {
-        if (relation instanceof QueryRelation && !((QueryRelation) relation).getCteRelations().isEmpty()) {
-            QueryRelation queryRelation = (QueryRelation) relation;
-            if (queryRelation.getCteRelations().stream().noneMatch(c -> c.getRefs() > 1)) {
+        if (relation instanceof QueryRelation queryRelation && !queryRelation.getCteRelations().isEmpty()) {
+            if (queryRelation.getCteRelations().stream().noneMatch(c -> c.getRefs() > 1 || c.isRecursive())) {
                 // all cte is only referenced once, no need to reuse
                 return visit(relation);
             }
@@ -244,8 +243,10 @@ public class RelationTransformer implements AstVisitorExtendInterface<LogicalPla
             }
 
             int cteId = cteContext.registerCte(cteRelation.getCteMouldId());
-            LogicalCTEAnchorOperator anchorOperator = new LogicalCTEAnchorOperator(cteId);
-            LogicalCTEProduceOperator produceOperator = new LogicalCTEProduceOperator(cteId);
+            LogicalCTEAnchorOperator anchorOperator =
+                    LogicalCTEAnchorOperator.builder().setCteId(cteId).setIsRecursive(cteRelation.isRecursive()).build();
+            LogicalCTEProduceOperator produceOperator =
+                    LogicalCTEProduceOperator.builder().setCteId(cteId).build();
             LogicalPlan producerPlan =
                     new RelationTransformer(columnRefFactory, session,
                             new ExpressionMapping(new Scope(RelationId.anonymous(), new RelationFields())),
@@ -829,10 +830,25 @@ public class RelationTransformer implements AstVisitorExtendInterface<LogicalPla
         List<ColumnRefOperator> outputColumns = new ArrayList<>();
         int forceReuseThreshold = session.getSessionVariable().getCboCTEForceReuseNodeCount();
 
-        if (forceReuseThreshold <= 0 || producerNodeCount < forceReuseThreshold) {
+        if (node.isRecursive()) {
+            // recursive cte must reuse and build column from cte producer
+            ImmutableMap.Builder<ColumnRefOperator, ColumnRefOperator> mapBuilder = ImmutableMap.builder();
+            for (Field field : node.getRelationFields().getAllFields()) {
+                ColumnRefOperator newCol = columnRefFactory.create(field.getName(), field.getType(), true);
+                mapBuilder.put(newCol, newCol);
+                outputColumns.add(newCol);
+            }
+
+            LogicalCTEConsumeOperator consume = LogicalCTEConsumeOperator.builder()
+                    .setCteId(cteId).setCteOutputColumnRefMap(mapBuilder.build()).build();
+            consumeBuilder = new OptExprBuilder(consume, List.of(),
+                    new ExpressionMapping(node.getScope(), outputColumns, null)
+            );
+        } else if (forceReuseThreshold <= 0 || producerNodeCount < forceReuseThreshold) {
             LogicalPlan childPlan = transform(node.getCteQueryStatement().getQueryRelation());
             Map<ColumnRefOperator, ColumnRefOperator> cteOutputColumnRefMap = checkCtePlanOutput(cteId, childPlan, node);
-            LogicalCTEConsumeOperator consume = new LogicalCTEConsumeOperator(cteId, cteOutputColumnRefMap);
+            LogicalCTEConsumeOperator consume = LogicalCTEConsumeOperator.builder()
+                    .setCteId(cteId).setCteOutputColumnRefMap(cteOutputColumnRefMap).build();
             consumeBuilder = new OptExprBuilder(consume, Lists.newArrayList(childPlan.getRootBuilder()),
                     new ExpressionMapping(node.getScope(), childPlan.getOutputColumn(),
                             childPlan.getRootBuilder().getColumnRefToConstOperators()));
@@ -848,7 +864,8 @@ public class RelationTransformer implements AstVisitorExtendInterface<LogicalPla
                 mapBuilder.put(newCol, col);
             }
 
-            LogicalCTEConsumeOperator consume = new LogicalCTEConsumeOperator(cteId, mapBuilder.build());
+            LogicalCTEConsumeOperator consume = LogicalCTEConsumeOperator.builder()
+                    .setCteId(cteId).setCteOutputColumnRefMap(mapBuilder.build()).build();
             consumeBuilder = new OptExprBuilder(consume, List.of(),
                     new ExpressionMapping(node.getScope(), outputColumns, null)
             );
