@@ -97,6 +97,25 @@ public class SimpleExecutor {
         }
     }
 
+    public void executeDML(DmlStmt stmt) {
+        ConnectContext prev = ConnectContext.get();
+        try {
+            ConnectContext context = createConnectContext();
+            StmtExecutor executor = StmtExecutor.newInternalExecutor(context, stmt);
+            context.setExecutor(executor);
+            context.setQueryId(UUIDUtil.genUUID());
+            executor.execute();
+        } catch (Exception e) {
+            LOG.error(name + " execute SQL {} failed: {}", stmt, e.getMessage(), e);
+            throw new SemanticException(String.format(name + " execute sql failed: %s", e.getMessage()), e);
+        } finally {
+            ConnectContext.remove();
+            if (prev != null) {
+                prev.setThreadLocalInfo();
+            }
+        }
+    }
+
     public List<TResultBatch> executeDQL(String sql) {
         ConnectContext prev = ConnectContext.get();
         try {

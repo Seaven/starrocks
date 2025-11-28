@@ -127,6 +127,8 @@ import com.starrocks.qe.feedback.PlanTuningAdvisor;
 import com.starrocks.qe.feedback.analyzer.PlanTuningAnalyzer;
 import com.starrocks.qe.feedback.skeleton.SkeletonBuilder;
 import com.starrocks.qe.feedback.skeleton.SkeletonNode;
+import com.starrocks.qe.recursivecte.RecursiveCTEAstCheck;
+import com.starrocks.qe.recursivecte.RecursiveCTEExecutor;
 import com.starrocks.qe.scheduler.Coordinator;
 import com.starrocks.qe.scheduler.FeExecuteCoordinator;
 import com.starrocks.server.GlobalStateMgr;
@@ -705,6 +707,18 @@ public class StmtExecutor {
                 context.setExplainLevel(parsedStmt.getExplainLevel());
             } else {
                 context.setExplainLevel(null);
+            }
+
+            if (RecursiveCTEAstCheck.hasRecursiveCte(parsedStmt)) {
+                redirectStatus = RedirectStatus.FORWARD_WITH_SYNC;
+                if (isForwardToLeader()) {
+                    context.setIsForward(true);
+                    forwardToLeader();
+                    return;
+                }
+                RecursiveCTEExecutor executor = new RecursiveCTEExecutor();
+                parsedStmt = executor.splitOuterStmt(parsedStmt, context);
+                executor.prepareRecursiveCTE();
             }
 
             redirectStatus = RedirectStatus.getRedirectStatus(parsedStmt);

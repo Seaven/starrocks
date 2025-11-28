@@ -14,13 +14,23 @@
 
 package com.starrocks.sql.plan;
 
+import com.starrocks.common.profile.Timer;
+import com.starrocks.common.profile.Tracers;
+import com.starrocks.qe.recursivecte.RecursiveCTEAstCheck;
+import com.starrocks.qe.recursivecte.RecursiveCTEExecutor;
+import com.starrocks.sql.ast.StatementBase;
+import com.starrocks.sql.parser.SqlParser;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
 public class RecursiveCTETest extends PlanTestBase {
-    //    @Test
+    @Test
     public void testSimpleRecursiveCTE() throws Exception {
         String sql = "with recursive cte as " +
                 "(select v1 from t0 union all select v1 + 1 from cte where v1 < 10) " +
                 "select * from cte";
-        String plan = getLogicalFragmentPlan(sql);
+        String plan = testCte(sql);
         assertContains(plan, "MultiCastDataSinks\n" +
                 "  STREAM DATA SINK\n" +
                 "    EXCHANGE ID: 03\n" +
@@ -34,5 +44,19 @@ public class RecursiveCTETest extends PlanTestBase {
                 "\n" +
                 "  1:Project\n" +
                 "  |  <slot 2> : rand()");
+    }
+
+    public String testCte(String sql) {
+        List<StatementBase> statements;
+        try (Timer ignored = Tracers.watchScope("Parser")) {
+            statements = SqlParser.parse(sql, connectContext.getSessionVariable());
+        }
+        StatementBase statementBase = statements.get(0);
+
+        if (RecursiveCTEAstCheck.hasRecursiveCte(statementBase)) {
+            RecursiveCTEExecutor executor = new RecursiveCTEExecutor();
+            StatementBase sb = executor.splitOuterStmt(statementBase, connectContext);
+        }
+        return null;
     }
 }
